@@ -1,0 +1,13 @@
+{
+"name": "nodejs-server",
+"version": "1.0.0",
+"description": "A basic Node.js server to connect to a MongoDB Atlas cluster.",
+"main": "server.js",
+"scripts": {
+"start": "node server.js"
+},
+"dependencies": {
+"express": "^4.19.2",
+"mongoose": "^8.4.1"
+}
+}
