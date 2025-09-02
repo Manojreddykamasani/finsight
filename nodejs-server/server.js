@@ -1,17 +1,23 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/authRoutes');
+const cors=require('cors');
+dotenv.config();
+
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-const dbURI = "mongodb+srv://manojreddy08113_db_user:manoj08113@cluster0.jrnlvwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+app.use(express.json());
+app.use(cors());
+const dbURI = process.env.MONGO_URI || "mongodb+srv://manojreddy08113_db_user:manoj08113@cluster0.jrnlvwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(dbURI)
   .then(() => {
     console.log('MongoDB connected successfully!');
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-      console.log('Use this URL to view the server in your browser: http://localhost:3000');
     });
   })
   .catch((err) => {
@@ -19,38 +25,8 @@ mongoose.connect(dbURI)
     process.exit(1);
   });
 
-const itemSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  quantity: {
-    type: Number,
-    required: true
-  }
-});
-
-const Item = mongoose.model('Item', itemSchema);
-
-app.use(express.json());
-
-app.get('/api/items', async (req, res) => {
-  try {
-    const items = await Item.find();
-    if (items.length === 0) {
-      const dummyItem = new Item({
-        name: 'First Item',
-        quantity: 1
-      });
-      await dummyItem.save();
-      return res.status(200).json([dummyItem]);
-    }
-    res.status(200).json(items);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Server is connected to MongoDB!');
+  res.send('Finsight API is running!');
 });
