@@ -1,4 +1,3 @@
-// components/Navbar.jsx
 'use client';
 import Link from 'next/link';
 import ThemeToggle from './ThemeToggle';
@@ -31,15 +30,15 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/60 bg-white/70 backdrop-blur dark:border-neutral-800/60 dark:bg-neutral-950/60">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        {/* Brand */}
+      <nav className="flex items-center justify-between px-3 sm:px-6 py-3">
+        {/* Brand - pushed closer to left */}
         <Link href="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Finsight" className="h-7 w-7" />
           <span className="text-lg font-bold tracking-tight">Finsight</span>
         </Link>
 
         {/* Right section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative">
           <ThemeToggle />
 
           {!token ? (
@@ -59,7 +58,10 @@ export default function Navbar() {
               </button>
 
               {open && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
+                <div
+                  className="absolute mt-2 w-48 rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+                  style={{ right: '-0.5rem' }} // 👈 push closer to viewport edge
+                >
                   <Link
                     href="/change-password"
                     className="block px-4 py-2 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"

@@ -1,32 +1,37 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/authRoutes');
-const cors=require('cors');
+const express = require("express");
+const http = require("http");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const { Server } = require("socket.io");
+const cors = require("cors");
+const authRoutes = require("./routes/authRoutes");
+const stockRoutes = require("./routes/stockRoutes");
+const stockSocket = require("./sockets/stockSocket");
+
 dotenv.config();
 
-
 const app = express();
-const PORT = process.env.PORT || 5000;
-
 app.use(express.json());
 app.use(cors());
-const dbURI = process.env.MONGO_URI || "mongodb+srv://manojreddy08113_db_user:manoj08113@cluster0.jrnlvwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-mongoose.connect(dbURI)
-  .then(() => {
-    console.log('MongoDB connected successfully!');
 
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+app.use("/api/auth", authRoutes);
+app.use("/api/stocks", stockRoutes);
 
-app.use('/api/auth', authRoutes);
+const MONGO_URI = process.env.MONGO_URL;
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("MongoDB connected..."))
+  .catch((err) => console.error("MongoDB error:", err));
 
-app.get('/', (req, res) => {
-  res.send('Finsight API is running!');
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*", methods: ["GET", "POST"] },
+});
+
+
+stockSocket(io);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
