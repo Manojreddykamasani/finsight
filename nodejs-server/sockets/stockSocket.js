@@ -15,16 +15,20 @@ module.exports = (io) => {
       }
     });
 
-    // Subscribe to symbols
+    // Subscribe to specific symbols
     socket.on("subscribeStocks", async (symbols) => {
-  // Reset previous subscriptions (only track new ones)
   socket.subscribedSymbols = symbols.map((s) => s.toUpperCase());
   console.log(`📡 Client ${socket.id} subscribed ONLY to:`, socket.subscribedSymbols);
 
-  // Send initial snapshot for these
+  // Send initial snapshot with history
   const stocks = await Stock.find({ symbol: { $in: socket.subscribedSymbols } });
   stocks.forEach((s) => {
-    socket.emit("stockUpdate", s.toObject());
+    socket.emit("stockInit", {
+      symbol: s.symbol,
+      name: s.name,
+      price: s.price,
+      history: s.history.slice(-20), // 👈 send last 20 points
+    });
   });
 });
 
@@ -41,30 +45,33 @@ module.exports = (io) => {
     });
   });
 
-  // 🔄 Price simulation every 5s
+  // 🔄 Simulate stock price changes
   const simulateStockPrices = async () => {
     try {
       const stocks = await Stock.find({});
       for (let stock of stocks) {
-        const changePercent = (Math.random() * 4 - 2) / 100;
+        const changePercent = (Math.random() * 4 - 2) / 100; // -2% to +2%
         const newPrice = +(stock.price * (1 + changePercent)).toFixed(2);
 
-        stock.price = newPrice;
-        stock.history.push({
+        // Create a new history point with timestamp
+        const newPoint = {
           price: newPrice,
           volume: Math.floor(Math.random() * 1000),
-        });
+          createdAt: new Date(), // 👈 unique time for each point
+        };
+
+        stock.price = newPrice;
+        stock.history.push(newPoint);
         await stock.save();
 
-        // Emit updates only to subscribed clients
+        // Emit only the new point (not the whole history)
         io.sockets.sockets.forEach((client) => {
           if (client.subscribedSymbols?.includes(stock.symbol)) {
             client.emit("stockUpdate", {
               symbol: stock.symbol,
-              name: stock.name,
               price: stock.price,
-              volume: stock.history[stock.history.length - 1].volume,
               change: changePercent * 100,
+              point: newPoint, // 👈 just send this new tick
             });
           }
         });

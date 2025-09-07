@@ -1,33 +1,32 @@
-"use client";
-import './globals.css';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { AuthProvider } from '@/context/AuthContext';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import Sidebar from '@/components/Sidebar';
-import { usePathname } from 'next/navigation';
+import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Sidebar from "@/components/Sidebar";
+
+export const metadata = {
+  title: "Finsight — LLM-Driven Market Simulation",
+  description: "Finsight is a modern trading research UI with authentication and dark/light mode.",
+};
 
 export default function RootLayout({ children }) {
-  const pathname = usePathname();
-  const hideSidebarRoutes = ["/login", "/signup", "/landing"];
-
-  const showSidebar = !hideSidebarRoutes.some((r) =>
-    pathname.startsWith(r)
-  );
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors duration-300 dark:bg-neutral-950 dark:text-neutral-100">
         <ThemeProvider>
           <AuthProvider>
-            <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <div className="flex flex-1">
-                {showSidebar && <Sidebar />}
-                <main className="flex-1">{children}</main>
+            <SocketProvider>
+              <div className="flex min-h-screen flex-col">
+                <Navbar />
+                <div className="flex flex-1">
+                  <Sidebar />   {/* 👈 Persistent sidebar */}
+                  <main className="flex-1 p-6">{children}</main>
+                </div>
+                <Footer />
               </div>
-              <Footer />
-            </div>
+            </SocketProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
