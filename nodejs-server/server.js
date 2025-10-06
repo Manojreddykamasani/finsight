@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const stockRoutes = require("./routes/stockRoutes");
+const portfolioRoutes = require("./routes/portfolioRoutes"); // <-- ADD THIS
 const stockSocket = require("./sockets/stockSocket");
 
 dotenv.config();
@@ -16,6 +17,7 @@ app.use(cors());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", stockRoutes);
+app.use("/api/portfolio", portfolioRoutes); // <-- AND THIS
 
 const MONGO_URI = process.env.MONGO_URL;
 mongoose
@@ -27,7 +29,6 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
-
 
 stockSocket(io);
 

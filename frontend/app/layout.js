@@ -5,6 +5,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
+import { Toaster } from 'react-hot-toast';
 
 export const metadata = {
   title: "Finsight — LLM-Driven Market Simulation",
@@ -18,10 +19,20 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <SocketProvider>
+              <Toaster
+              position="bottom-center"
+              toastOptions={{
+                className: '',
+                style: {
+                  background: '#333',
+                  color: '#fff',
+                },
+              }}
+            />
               <div className="flex min-h-screen flex-col">
                 <Navbar />
                 <div className="flex flex-1">
-                  <Sidebar />   {/* 👈 Persistent sidebar */}
+                  <Sidebar />   
                   <main className="flex-1 p-6">{children}</main>
                 </div>
                 <Footer />
