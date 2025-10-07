@@ -4,7 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Sidebar from "@/components/Sidebar";
+// Import the new LayoutWrapper component
+import LayoutWrapper from "@/components/LayoutWrapper";
 import { Toaster } from 'react-hot-toast';
 
 export const metadata = {
@@ -31,10 +32,10 @@ export default function RootLayout({ children }) {
             />
               <div className="flex min-h-screen flex-col">
                 <Navbar />
-                <div className="flex flex-1">
-                  <Sidebar />   
-                  <main className="flex-1 p-6">{children}</main>
-                </div>
+                {/* Use the LayoutWrapper to conditionally render the sidebar and main content */}
+                <LayoutWrapper>
+                  {children}
+                </LayoutWrapper>
                 <Footer />
               </div>
             </SocketProvider>

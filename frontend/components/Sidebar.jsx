@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Newspaper } from "lucide-react";
+import { BarChart3, Users, Newspaper,User2 } from "lucide-react";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: <BarChart3 size={18} /> },
   { href: "/polls", label: "Polls", icon: <Users size={18} /> },
   { href: "/news", label: "News", icon: <Newspaper size={18} /> },
+  { href: "/portfolio", label: "Portfolio", icon: <User2 size={18} /> }
 ];
 
 export default function Sidebar() {

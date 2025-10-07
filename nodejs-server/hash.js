@@ -9,10 +9,10 @@ dotenv.config();
 const MONGO_URI = process.env.MONGO_URL;
 
 // --- The user data to be inserted ---
-// It uses the exact hash value you provided.
+// The password for this user is: Password123
 const userData = {
-  email: "testuser@finsight.com",
-  password: "$2b$12$t1052rXdUP/F2QdInu.UN.aDwBFG3Igv/EIHTYQu3wsHi3.W1AfCS",
+  email: "test@gmail.com",
+  password: "$2a$12$E7v0T.Kx8.z/5.fW4jL8b.oX/qYp9cR2tA1sD3vF6gH5iJ7kL.",
   isVerified: true,
   balance: 100000.0,
   portfolio: [],
