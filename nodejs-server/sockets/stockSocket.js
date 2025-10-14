@@ -17,20 +17,24 @@ module.exports = (io) => {
 
     // Subscribe to specific symbols
     socket.on("subscribeStocks", async (symbols) => {
-  socket.subscribedSymbols = symbols.map((s) => s.toUpperCase());
-  console.log(`📡 Client ${socket.id} subscribed ONLY to:`, socket.subscribedSymbols);
+      socket.subscribedSymbols = symbols.map((s) => s.toUpperCase());
+      console.log(`📡 Client ${socket.id} subscribed ONLY to:`, socket.subscribedSymbols);
 
-  // Send initial snapshot with history
-  const stocks = await Stock.find({ symbol: { $in: socket.subscribedSymbols } });
-  stocks.forEach((s) => {
-    socket.emit("stockInit", {
-      symbol: s.symbol,
-      name: s.name,
-      price: s.price,
-      history: s.history.slice(-20), // 👈 send last 20 points
+      // Send initial snapshot with history
+      try {
+        const stocks = await Stock.find({ symbol: { $in: socket.subscribedSymbols } });
+        stocks.forEach((s) => {
+          socket.emit("stockInit", {
+            symbol: s.symbol,
+            name: s.name,
+            price: s.price,
+            history: s.history.slice(-50), // Send last 50 points
+          });
+        });
+      } catch(err) {
+          console.error("Error fetching initial stock data:", err);
+      }
     });
-  });
-});
 
     // Unsubscribe
     socket.on("unsubscribeStocks", (symbols) => {
@@ -45,41 +49,72 @@ module.exports = (io) => {
     });
   });
 
-  // 🔄 Simulate stock price changes
-  const simulateStockPrices = async () => {
+  // 🔄 Restructure to use a recursive setTimeout to prevent race conditions
+  const runSimulation = async () => {
     try {
       const stocks = await Stock.find({});
       for (let stock of stocks) {
-        const changePercent = (Math.random() * 4 - 2) / 100; // -2% to +2%
-        const newPrice = +(stock.price * (1 + changePercent)).toFixed(2);
+        // 1. Simulate trading volume
+        const tradingVolume = stock.avgVolume * (Math.random() * 0.1);
 
-        // Create a new history point with timestamp
+        // 2. Simulate buy/sell pressure
+        const buyPressure = Math.random();
+        const simulatedBuyVolume = Math.floor(tradingVolume * buyPressure);
+        const simulatedSellVolume = Math.floor(tradingVolume * (1 - buyPressure));
+
+        // 3. Calculate net demand ratio
+        const netDemandRatio = stock.avgVolume > 0 ? (simulatedBuyVolume - simulatedSellVolume) / stock.avgVolume : 0;
+        
+        // 4. Calculate price change
+        const scalingFactor = 5; 
+        const changePercent = netDemandRatio * stock.volatility * scalingFactor;
+
+        const oldPrice = stock.price;
+        let newPrice = oldPrice * (1 + changePercent);
+        newPrice = Math.max(0.01, +newPrice.toFixed(2));
+
+        // 5. Create new history point and update stock data
         const newPoint = {
           price: newPrice,
-          volume: Math.floor(Math.random() * 1000),
-          createdAt: new Date(), // 👈 unique time for each point
+          volume: simulatedBuyVolume + simulatedSellVolume,
+          timestamp: new Date(),
         };
 
         stock.price = newPrice;
+        stock.volume += newPoint.volume;
         stock.history.push(newPoint);
+
+        if (stock.history.length > 500) {
+            stock.history.shift();
+        }
+
         await stock.save();
 
-        // Emit only the new point (not the whole history)
+        // 6. Emit updates
+        const priceChangeDecimal = (newPrice - oldPrice) / oldPrice;
+
         io.sockets.sockets.forEach((client) => {
           if (client.subscribedSymbols?.includes(stock.symbol)) {
             client.emit("stockUpdate", {
               symbol: stock.symbol,
               price: stock.price,
-              change: changePercent * 100,
-              point: newPoint, // 👈 just send this new tick
+              change: priceChangeDecimal * 100,
+              point: newPoint,
             });
           }
         });
       }
     } catch (err) {
-      console.error("Error simulating stock prices:", err);
+      // Don't crash the server on an error, just log it.
+      // A VersionError here is not critical and the simulation will recover on the next run.
+      console.error("Error during stock price simulation:", err.message);
+    } finally {
+      // Schedule the next run ONLY after the current one has finished
+      setTimeout(runSimulation, 3000);
     }
   };
 
-  setInterval(simulateStockPrices, 5000);
+  // Start the simulation loop
+  runSimulation();
 };
+

@@ -4,7 +4,12 @@ const transactionSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false, 
+    },
+    agent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Agent',
+        required: false,
     },
     stock: {
         type: mongoose.Schema.Types.ObjectId,
