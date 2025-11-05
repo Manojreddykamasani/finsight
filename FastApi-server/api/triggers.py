@@ -1,16 +1,54 @@
-from fastapi import APIRouter, BackgroundTasks
-from models.agent_models import NewsTrigger
-from services.agent_orchestrator import trigger_all_agents_with_news
+import logging
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from services.agent_orchestrator import trigger_all_agents_with_news, trigger_daily_market_review
+from services.node_api_service import node_api_service # Import our service
 
-router = APIRouter(prefix="/trigger", tags=["Agent Triggers"])
+logger = logging.getLogger(__name__)
+router = APIRouter()
 
-@router.post("/news")
-async def trigger_by_news(news_data: NewsTrigger, background_tasks: BackgroundTasks):
+class NewsTrigger(BaseModel):
+    news_headline: str
+    news_content: str
+
+@router.post("/trigger/news")
+async def trigger_news_event(trigger: NewsTrigger, background_tasks: BackgroundTasks):
     """
-    Receives a news event and triggers all agents to react.
-    This runs as a background task so the API returns a response immediately.
+    Trigger all agents to react to a new news event.
+    This now creates the event in the DB first.
     """
-    news_string = f"Headline: {news_data.news_headline}. Details: {news_data.news_content}"
-    background_tasks.add_task(trigger_all_agents_with_news, news_string)
-    
-    return {"message": "News trigger received. Agents are now processing the information."}
+    try:
+        # 1. Create the NewsEvent in Node.js DB and get the ID
+        new_event = await node_api_service.create_news_event(
+            headline=trigger.news_headline,
+            content=trigger.news_content
+        )
+        
+        if not new_event or '_id' not in new_event:
+            logger.error("Failed to create news event in Node.js, aborting agent trigger.")
+            raise HTTPException(status_code=500, detail="Failed to create news event in database.")
+            
+        event_id = new_event['_id']
+        logger.info(f"News event created with ID: {event_id}. Triggering agents...")
+
+        # 2. Add the agent trigger to background tasks with the new event_id
+        background_tasks.add_task(
+            trigger_all_agents_with_news, 
+            news_string=trigger.news_headline, # Pass headline for the prompt
+            event_id=event_id                  # Pass ID for logging
+        )
+        
+        return {"message": "News event trigger accepted. Agents are processing in the background."}
+
+    except Exception as e:
+        logger.error(f"Error in trigger_news_event endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/trigger/daily-review")
+async def trigger_daily_review(background_tasks: BackgroundTasks):
+    """
+    Triggers the daily market review for all agents.
+    """
+    logger.info("Daily review trigger accepted. Agents are processing in the background.")
+    background_tasks.add_task(trigger_daily_market_review)
+    return {"message": "Daily review trigger accepted. Agents are processing in the background."}

@@ -19,7 +19,6 @@ const portfolioStockSchema = new mongoose.Schema({
 }, { 
     _id: false 
 });
-
 const agentSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -32,6 +31,14 @@ const agentSchema = new mongoose.Schema({
         required: [true, 'Agent must have a persona (e.g., Aggressive, Value Investor)'],
         trim: true,
     },
+    // --- NEW FIELD ---
+    model: {
+        type: String,
+        required: [true, 'Agent must have a model (e.g., gemini-pro)'],
+        default: 'gemini-2.5-pro', // Set a sensible default
+        trim: true,
+    },
+    // --- END NEW FIELD ---
     balance: {
         type: Number,
         default: 100000 // Agents also start with $100,000

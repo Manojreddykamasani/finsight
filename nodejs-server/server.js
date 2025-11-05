@@ -11,7 +11,7 @@ const stockRoutes = require("./routes/stockRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const agentRoutes = require('./routes/agentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-
+const newsRouter = require('./routes/newsRoutes');
 // --- Socket Import ---
 const stockSocket = require("./sockets/stockSocket");
 
@@ -30,7 +30,7 @@ app.use("/api/stocks", stockRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use('/api/agents', agentRoutes);
 app.use('/api/analytics', analyticsRoutes);
-
+app.use('/api/news', newsRouter);
 // --- Socket.IO Setup ---
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },

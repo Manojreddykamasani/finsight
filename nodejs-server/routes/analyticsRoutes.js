@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
     getLeaderboard, 
     getAgentLeaderboard, 
-    getSingleAgentAnalytics 
+    getSingleAgentAnalytics ,
+    getNewsWithReactions
 } = require('../controllers/analyticsController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -18,5 +19,5 @@ router.get('/leaderboard/agents', getAgentLeaderboard);
 
 // A public route to get detailed analytics for a single agent by their ID
 router.get('/agents/:id/analytics', getSingleAgentAnalytics);
-
+router.get('/news/reactions', getNewsWithReactions);
 module.exports = router;

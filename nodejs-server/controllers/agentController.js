@@ -10,14 +10,16 @@ const { marketPressure } = require('../simulation/marketState');
 
 exports.createAgent = async (req, res) => {
     try {
-        const { name, persona } = req.body;
-        if (!name || !persona) {
-            return res.status(400).json({ status: "fail", message: "Name and persona are required." });
+        const { name, persona, model } = req.body; 
+        
+        if (!name || !persona || !model) { 
+            return res.status(400).json({ status: "fail", message: "Name, persona, and model are required." });
         }
-        const newAgent = await Agent.create({ name, persona });
+        
+        const newAgent = await Agent.create({ name, persona, model }); 
+        
         res.status(201).json({ status: "success", message: "Agent created successfully.", data: newAgent });
     } catch (err) {
-        // Handle potential duplicate name error
         if (err.code === 11000) {
             return res.status(409).json({ status: "fail", message: "An agent with this name already exists." });
         }
@@ -27,7 +29,8 @@ exports.createAgent = async (req, res) => {
 
 exports.getAllAgents = async (req, res) => {
     try {
-        const agents = await Agent.find({}, '_id name persona'); // Send back only essential info
+        // Return model as well, so Python service can see it
+        const agents = await Agent.find({}, '_id name persona model');
         res.status(200).json({ status: "success", data: agents });
     } catch (err) {
         res.status(500).json({ status: "fail", message: err.message });
@@ -56,8 +59,10 @@ exports.buyStock = async (req, res) => {
         if (agent.balance < cost) throw new Error("Agent has insufficient funds.");
 
         const existingStockIndex = agent.portfolio.findIndex(s => s.stock.equals(stock._id));
+        
+        // --- BUG FIX: Was `existingStock-index` ---
         if (existingStockIndex > -1) {
-            const es = agent.portfolio[existingStock-index];
+            const es = agent.portfolio[existingStockIndex]; 
             const totalQty = es.quantity + Number(quantity);
             es.averageBuyPrice = ((es.averageBuyPrice * es.quantity) + cost) / totalQty;
             es.quantity = totalQty;
@@ -67,8 +72,7 @@ exports.buyStock = async (req, res) => {
         
         agent.balance -= cost;
         await agent.save({ session });
-        // NOTE: You may want to create a separate collection for Agent transactions later
-        // For now, this adds a reference to the agent in the user transaction schema
+
         await Transaction.create([{ agent: agentId, user: null, stock: stock._id, type: 'buy', quantity, price: stock.price }], { session });
         
         await session.commitTransaction();
@@ -128,8 +132,6 @@ exports.sellStock = async (req, res) => {
     }
 };
 
-// --- Agent Loan System ---
-
 exports.takeLoan = async (req, res) => {
     const { agentId, amount } = req.body;
     if (!agentId || !amount || amount <= 0) {
@@ -159,12 +161,18 @@ exports.takeLoan = async (req, res) => {
     }
 };
 
-// --- Agent Daily Logging ---
-
 exports.createDailyLog = async (req, res) => {
-    const { agentId, insight, actionsTaken, marketSentiment, netWorthSnapshot } = req.body;
+    // --- MODIFIED TO ACCEPT newsEvent ---
+    const { agentId, insight, actionsTaken, marketSentiment, netWorthSnapshot, newsEvent } = req.body;
     try {
-        const log = await AgentLog.create({ agent: agentId, insight, actionsTaken, marketSentiment, netWorthSnapshot });
+        const log = await AgentLog.create({ 
+            agent: agentId, 
+            insight, 
+            actionsTaken, 
+            marketSentiment, 
+            netWorthSnapshot,
+            newsEvent: newsEvent || null // Save the newsEvent ID (or null if it's a daily review)
+        });
         res.status(201).json({ status: "success", data: log });
     } catch (err) {
         res.status(400).json({ status: "fail", message: err.message });
@@ -183,6 +191,7 @@ exports.getAgentDetails = async (req, res) => {
         res.status(500).json({ status: "fail", message: err.message });
     }
 };
+
 exports.deleteAgent = async (req, res) => {
     try {
         const agent = await Agent.findByIdAndDelete(req.params.id);
@@ -190,15 +199,12 @@ exports.deleteAgent = async (req, res) => {
         if (!agent) {
             return res.status(404).json({ status: "fail", message: "Agent not found" });
         }
-
-        // Optional: Also delete related logs and loans if necessary
         await AgentLog.deleteMany({ agent: req.params.id });
         await Loan.deleteMany({ agent: req.params.id });
 
-        res.status(204).json({ status: "success", data: null }); // 204 No Content is standard for successful deletes
+        res.status(204).json({ status: "success", data: null }); 
 
     } catch (err) {
         res.status(500).json({ status: "fail", message: err.message });
     }
 };
-

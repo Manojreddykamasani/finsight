@@ -24,7 +24,7 @@ export default function ResetPasswordPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/auth/reset-password/${token}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password/${token}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

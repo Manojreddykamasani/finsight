@@ -5,7 +5,7 @@ import { BarChart3, Users, Newspaper,User2 } from "lucide-react";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: <BarChart3 size={18} /> },
-  { href: "/polls", label: "Polls", icon: <Users size={18} /> },
+  { href: "/admin", label: "admin", icon: <Users size={18} /> },
   { href: "/news", label: "News", icon: <Newspaper size={18} /> },
   { href: "/portfolio", label: "Portfolio", icon: <User2 size={18} /> },
   {href: "/leaderboard", label: "Leaderboard", icon: <Users size={18} /> },

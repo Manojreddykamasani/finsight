@@ -1,7 +1,7 @@
 const User = require('../models/userModel');
 const Agent = require('../models/agentModel');
 const AgentLog = require('../models/agentLogModel');
-
+const NewsEvent = require('../models/newsEventModel'); 
 // Helper function to calculate portfolio value
 const calculatePortfolioValue = (portfolio) => {
     if (!portfolio || portfolio.length === 0) {
@@ -103,4 +103,51 @@ exports.getSingleAgentAnalytics = async (req, res) => {
         res.status(500).json({ status: 'fail', message: `Error fetching single agent analytics: ${err.message}` });
     }
 };
+exports.getNewsWithReactions = async (req, res) => {
+    try {
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
+        // 1. Fetch paginated news events, most recent first
+        const newsEvents = await NewsEvent.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(); // Use .lean() for fast, read-only results
+
+        // 2. Get total count for pagination metadata
+        const totalEvents = await NewsEvent.countDocuments();
+
+        // 3. For each news event, find all related agent logs
+        const eventsWithReactions = await Promise.all(
+            newsEvents.map(async (event) => {
+                const reactions = await AgentLog.find({ newsEvent: event._id })
+                    .populate('agent', 'name') // Only get the agent's name
+                    .select('agent insight actionsTaken marketSentiment createdAt') // Select only needed fields
+                    .sort({ createdAt: 1 }) // Show reactions in order they happened
+                    .lean();
+                
+                return {
+                    ...event,
+                    reactions: reactions,
+                };
+            })
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: eventsWithReactions,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalEvents / limit),
+                totalEvents: totalEvents,
+                limit: limit
+            }
+        });
+
+    } catch (err) {
+        res.status(500).json({ status: 'fail', message: `Error fetching news with reactions: ${err.message}` });
+    }
+};

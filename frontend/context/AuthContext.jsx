@@ -12,7 +12,7 @@ const AuthContext = createContext({
 });
 
 // Define your backend URL here or import it from a config file
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);

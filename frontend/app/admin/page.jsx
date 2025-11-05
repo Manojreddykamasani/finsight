@@ -14,10 +14,13 @@ export default function AgentManagementPage() {
     // State for the agent creation form
     const [newAgentName, setNewAgentName] = useState('');
     const [newAgentPersona, setNewAgentPersona] = useState('');
+    // --- MODIFIED ---
+    const [newAgentModel, setNewAgentModel] = useState('gemini-2.5-pro'); // Set correct default
+    // ---
     const [isSubmittingAgent, setIsSubmittingAgent] = useState(false);
     const [agentFormError, setAgentFormError] = useState('');
 
-    // --- NEW: State for the news trigger form ---
+    // State for the news trigger form
     const [newsHeadline, setNewsHeadline] = useState('');
     const [newsContent, setNewsContent] = useState('');
     const [isTriggeringNews, setIsTriggeringNews] = useState(false);
@@ -47,8 +50,9 @@ export default function AgentManagementPage() {
 
     const handleCreateAgent = async (e) => {
         e.preventDefault();
-        if (!newAgentName || !newAgentPersona) {
-            setAgentFormError("Both name and persona are required.");
+        // MODIFIED: Check all three fields
+        if (!newAgentName || !newAgentPersona || !newAgentModel) {
+            setAgentFormError("Name, persona, and model are all required.");
             return;
         }
         setIsSubmittingAgent(true);
@@ -57,15 +61,24 @@ export default function AgentManagementPage() {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/agents`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newAgentName, persona: newAgentPersona }),
+                // MODIFIED: Include the new agent model in the body
+                body: JSON.stringify({ 
+                    name: newAgentName, 
+                    persona: newAgentPersona,
+                    model: newAgentModel 
+                }),
             });
             const result = await response.json();
             if (!response.ok) {
+                // Use the error message from the backend if available
                 throw new Error(result.message || `Failed to create agent (Status: ${response.status})`);
             }
             setAgents(prev => [...prev, result.data]);
             setNewAgentName('');
             setNewAgentPersona('');
+            // --- MODIFIED ---
+            setNewAgentModel('gemini-2.5-pro'); // Reset model dropdown to correct default
+            // ---
         } catch (e) {
             console.error("Error creating agent:", e);
             setAgentFormError(e.message);
@@ -103,7 +116,8 @@ export default function AgentManagementPage() {
         setNewsFormSuccess('');
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/trigger/news`, {
+            // NOTE: Using 127.0.0.1 for FastAPI server
+            const response = await fetch(`${process.env.NEXT_PUBLIC_FAST_URL}/trigger/news`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -146,9 +160,9 @@ export default function AgentManagementPage() {
                     
                     {/* --- Left Column for Forms --- */}
                     <div className="lg:col-span-1">
-                        {/* FIX: Wrapper div for sticky positioning */}
                         <div className="sticky top-6 space-y-8">
-                            {/* --- Create Agent Form Card (sticky class removed) --- */}
+                            
+                            {/* --- Create Agent Form Card --- */}
                             <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
                                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                                     <UserPlus className="h-6 w-6 mr-3 text-blue-600 dark:text-blue-400" />
@@ -164,6 +178,31 @@ export default function AgentManagementPage() {
                                         <label htmlFor="agentPersona" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Persona</label>
                                         <input type="text" id="agentPersona" value={newAgentPersona} onChange={(e) => setNewAgentPersona(e.target.value)} placeholder="e.g., 'Aggressive Growth Investor'" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
                                     </div>
+
+                                    {/* --- MODIFIED: Model Selection Dropdown --- */}
+                                    <div>
+                                        <label htmlFor="agentModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            AI Model
+                                        </label>
+                                        <select 
+                                            id="agentModel" 
+                                            value={newAgentModel} 
+                                            onChange={(e) => setNewAgentModel(e.target.value)}
+                                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                            <optgroup label="Cloud APIs (Google)">
+                                                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                            </optgroup>
+                                            <optgroup label="Local Models (Ollama)">
+                                                <option value="ollama/phi3:mini">Local: Phi-3 Mini</option>
+                                                <option value="ollama/tinyllama">Local: TinyLlama</option>
+                                                <option value="ollama/llama3:8b">Local: Llama 3 (8B)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    {/* --- END: Model Selection Dropdown --- */}
+
                                     {agentFormError && (<p className="text-sm text-red-500 flex items-center"><AlertCircle className="h-4 w-4 mr-2" />{agentFormError}</p>)}
                                     <button type="submit" disabled={isSubmittingAgent} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
                                         {isSubmittingAgent ? 'Creating...' : 'Create Agent'}
@@ -171,7 +210,7 @@ export default function AgentManagementPage() {
                                 </form>
                             </div>
 
-                            {/* --- Trigger News Event Card (sticky class removed) --- */}
+                            {/* --- Trigger News Event Card --- */}
                             <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
                                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                                     <Newspaper className="h-6 w-6 mr-3 text-green-600 dark:text-green-400" />
@@ -217,6 +256,10 @@ export default function AgentManagementPage() {
                                             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                                                 <BrainCircuit className="h-4 w-4 mr-2" />{agent.persona}
                                             </p>
+                                            {/* MODIFIED: Display the agent's model */}
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Model: <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">{agent.model || 'gemini-2.5-pro'}</span>
+                                            </p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             {/* FIX: Replaced <Link> with <a> to resolve compilation error */}
@@ -237,4 +280,3 @@ export default function AgentManagementPage() {
         </main>
     );
 }
-

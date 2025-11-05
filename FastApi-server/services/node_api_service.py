@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 class NodeAPIService:
     def __init__(self):
         self.base_url = settings.NODE_BASE_URL
+        if not self.base_url:
+            logger.critical("NODE_BASE_URL is not set! The API service cannot start.")
+            raise ValueError("NODE_BASE_URL is not set in environment.")
         self.client = httpx.AsyncClient(timeout=30.0)
 
     async def get_all_agents(self):
@@ -31,18 +34,25 @@ class NodeAPIService:
             logger.error(f"Error fetching stocks: {e.response.text}")
             return []
 
-    async def create_agent(self, name: str, persona: str):
-        """Creates a new agent via the Node.js API."""
+    # --- THIS IS THE CORRECTED FUNCTION ---
+    async def create_agent(self, name: str, persona: str, model: str):
+        """Creates a new agent via the Node.js API, now including the model."""
         try:
-            payload = {"name": name, "persona": persona}
+            # The 'model' is now included in the payload
+            payload = {"name": name, "persona": persona, "model": model}
             response = await self.client.post(f"{self.base_url}/agents", json=payload)
             response.raise_for_status()
-            logger.info(f"Successfully created agent: {name}")
+            logger.info(f"Successfully created agent: {name} with model {model}")
             return response.json()
         except httpx.HTTPStatusError as e:
-            error_message = e.response.json().get("message", e.response.text)
+            # Try to parse the error message from Node.js
+            try:
+                error_message = e.response.json().get("message", e.response.text)
+            except:
+                error_message = e.response.text
             logger.error(f"Error creating agent '{name}': {error_message}")
             return {"status": "fail", "message": error_message}
+    # --- END CORRECTION ---
 
 
     async def get_agent_details(self, agent_id: str):
@@ -66,5 +76,25 @@ class NodeAPIService:
         except httpx.HTTPStatusError as e:
             logger.error(f"Agent action '{endpoint}' failed: {e.response.text}")
             return None
+
+    async def create_news_event(self, headline: str, content: str) -> dict | None:
+        """
+        Creates a new news event in the Node.js database and returns the event data.
+        """
+        payload = {
+            "news_headline": headline,
+            "news_content": content
+        }
+        try:
+            url = f"{self.base_url}/news"
+            response = await self.client.post(url, json=payload) 
+            response.raise_for_status()
+            logger.info(f"Successfully created news event: {headline}")
+            return response.json().get('data') # Return the new event object
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error creating news event: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            logger.error(f"Error creating news event: {e}", exc_info=True)
+        return None
 
 node_api_service = NodeAPIService()

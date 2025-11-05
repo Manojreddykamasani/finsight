@@ -8,12 +8,13 @@ const {
     sellStock, 
     takeLoan,
     createDailyLog,
+    deleteAgent
 } = require('../controllers/agentController');
 
 // --- Agent Management (for the admin panel/FastAPI service) ---
 // Corresponds to POST /api/agents/
 router.post('/', createAgent);
-
+router.delete('/:id', deleteAgent);
 // Corresponds to GET /api/agents/
 router.get('/', getAllAgents);
 

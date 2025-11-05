@@ -6,7 +6,16 @@ const agentLogSchema = new mongoose.Schema({
         ref: 'Agent',
         required: true
     },
-    // The message/log content provided by the external trigger (FastAPI server)
+    // --- NEW FIELD ---
+    // This links the log to the specific news event that triggered it.
+    // It is not required, so daily market reviews (without news) are still valid logs.
+    newsEvent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'NewsEvent',
+        index: true, // Add index for faster lookups
+        default: null
+    },
+    // --- END NEW FIELD ---
     insight: {
         type: String,
         required: [true, "Log entry must contain insights."]
