@@ -10,29 +10,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --- CORS (Cross-Origin Resource Sharing) Middleware ---
-# This allows your frontend application (e.g., running on http://localhost:3000)
-# to make requests to this FastAPI backend.
 
 origins = [
     "http://localhost",
-    "http://localhost:3000", # Default for Next.js/React
+    "http://localhost:3000", 
     "http://localhost:8080",
-    "http://localhost:5173", # Default for Vite
-    # Add the URL of your deployed frontend application here
-    # e.g., "https://your-app-name.vercel.app"
+    "http://localhost:5173",
+    "https://finsight-jade.vercel.app"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # The list of origins that are allowed to make cross-origin requests.
-    allow_credentials=True, # Support cookies for cross-origin requests.
-    allow_methods=["*"],    # Allow all methods (GET, POST, etc.).
-    allow_headers=["*"],    # Allow all headers.
+    allow_origins=origins,  
+    allow_credentials=True, 
+    allow_methods=["*"],    
+    allow_headers=["*"],   
 )
 
 
-# --- Scheduler Events ---
 @app.on_event("startup")
 def startup_event():
     start_scheduler()
