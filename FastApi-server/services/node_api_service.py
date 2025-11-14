@@ -2,7 +2,6 @@ import httpx
 from core.config import settings
 import logging
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -34,25 +33,21 @@ class NodeAPIService:
             logger.error(f"Error fetching stocks: {e.response.text}")
             return []
 
-    # --- THIS IS THE CORRECTED FUNCTION ---
     async def create_agent(self, name: str, persona: str, model: str):
         """Creates a new agent via the Node.js API, now including the model."""
         try:
-            # The 'model' is now included in the payload
             payload = {"name": name, "persona": persona, "model": model}
             response = await self.client.post(f"{self.base_url}/agents", json=payload)
             response.raise_for_status()
             logger.info(f"Successfully created agent: {name} with model {model}")
             return response.json()
         except httpx.HTTPStatusError as e:
-            # Try to parse the error message from Node.js
             try:
                 error_message = e.response.json().get("message", e.response.text)
             except:
                 error_message = e.response.text
             logger.error(f"Error creating agent '{name}': {error_message}")
             return {"status": "fail", "message": error_message}
-    # --- END CORRECTION ---
 
 
     async def get_agent_details(self, agent_id: str):
@@ -90,7 +85,7 @@ class NodeAPIService:
             response = await self.client.post(url, json=payload) 
             response.raise_for_status()
             logger.info(f"Successfully created news event: {headline}")
-            return response.json().get('data') # Return the new event object
+            return response.json().get('data')
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error creating news event: {e.response.status_code} - {e.response.text}")
         except Exception as e:

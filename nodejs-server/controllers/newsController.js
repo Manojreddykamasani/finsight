@@ -12,7 +12,6 @@ exports.createNewsEvent = async (req, res) => {
             content: news_content
         });
 
-        // Send back the new event, especially its ID
         res.status(201).json({ status: "success", data: newEvent });
 
     } catch (err) {

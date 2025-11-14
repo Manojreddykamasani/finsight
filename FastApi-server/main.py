@@ -41,7 +41,6 @@ def startup_event():
 def shutdown_event():
     shutdown_scheduler()
 
-# --- API Routers ---
 app.include_router(agents.router, prefix="/api")
 app.include_router(triggers.router, prefix="/api")
 

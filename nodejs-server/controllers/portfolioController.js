@@ -7,7 +7,7 @@ exports.getPortfolio = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).populate({
             path: 'portfolio.stock',
-            select: 'symbol name price logoUrl' // Populate with essential stock details
+            select: 'symbol name price logoUrl' 
         });
 
         if (!user) {
@@ -82,20 +82,18 @@ exports.buyStock = async (req, res) => {
 exports.getTransactionsBySymbol = async (req, res) => {
     try {
         const { symbol } = req.params;
-        // First find the stock to get its _id
         const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
 
         if (!stock) {
             return res.status(404).json({ status: "fail", message: "Stock not found" });
         }
 
-        // Then find transactions for that user and stock
         const transactions = await Transaction.find({
             user: req.user.id,
             stock: stock._id
         })
-        .sort({ timestamp: -1 }) // Most recent first
-        .limit(20); // Get the last 20 trades
+        .sort({ timestamp: -1 }) 
+        .limit(20); 
 
         res.status(200).json({ status: "success", data: transactions });
 

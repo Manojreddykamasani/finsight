@@ -2,20 +2,17 @@ const User = require('../models/userModel');
 const Agent = require('../models/agentModel');
 const AgentLog = require('../models/agentLogModel');
 const NewsEvent = require('../models/newsEventModel'); 
-// Helper function to calculate portfolio value
 const calculatePortfolioValue = (portfolio) => {
     if (!portfolio || portfolio.length === 0) {
         return 0;
     }
     return portfolio.reduce((total, item) => {
-        // Ensure stock price is available, otherwise default to 0
         const price = item.stock && item.stock.price ? item.stock.price : 0;
         return total + (item.quantity * price);
     }, 0);
 };
 
 
-// --- Existing Full Leaderboard ---
 exports.getLeaderboard = async (req, res) => {
     try {
         const users = await User.find({}).populate('portfolio.stock');
@@ -43,7 +40,6 @@ exports.getLeaderboard = async (req, res) => {
 };
 
 
-// --- NEW: Leaderboard with ONLY Agents ---
 exports.getAgentLeaderboard = async (req, res) => {
     try {
         const agents = await Agent.find({}).populate('portfolio.stock');
@@ -69,12 +65,10 @@ exports.getAgentLeaderboard = async (req, res) => {
 };
 
 
-// --- NEW: Detailed Analytics for a SINGLE Agent ---
 exports.getSingleAgentAnalytics = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Use lean() for faster read-only operations
         const agent = await Agent.findById(id).populate('portfolio.stock').lean();
         if (!agent) {
             return res.status(404).json({ status: 'fail', message: 'Agent not found' });
@@ -93,7 +87,6 @@ exports.getSingleAgentAnalytics = async (req, res) => {
             },
             logs: logs
         };
-        // We don't need to send portfolio twice
         delete analyticsData.agentDetails.portfolio;
 
 
@@ -105,28 +98,24 @@ exports.getSingleAgentAnalytics = async (req, res) => {
 };
 exports.getNewsWithReactions = async (req, res) => {
     try {
-        // --- Pagination ---
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // 1. Fetch paginated news events, most recent first
         const newsEvents = await NewsEvent.find()
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .lean(); // Use .lean() for fast, read-only results
+            .lean(); 
 
-        // 2. Get total count for pagination metadata
         const totalEvents = await NewsEvent.countDocuments();
 
-        // 3. For each news event, find all related agent logs
         const eventsWithReactions = await Promise.all(
             newsEvents.map(async (event) => {
                 const reactions = await AgentLog.find({ newsEvent: event._id })
-                    .populate('agent', 'name') // Only get the agent's name
-                    .select('agent insight actionsTaken marketSentiment createdAt') // Select only needed fields
-                    .sort({ createdAt: 1 }) // Show reactions in order they happened
+                    .populate('agent', 'name') 
+                    .select('agent insight actionsTaken marketSentiment createdAt') 
+                    .sort({ createdAt: 1 }) 
                     .lean();
                 
                 return {

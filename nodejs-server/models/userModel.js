@@ -1,31 +1,28 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); // It's better to require crypto at the top
+const crypto = require('crypto'); 
 
-// --- SUB-DOCUMENT SCHEMA FOR STOCKS IN A USER'S PORTFOLIO ---
 const portfolioStockSchema = new mongoose.Schema({
     stock: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Stock', // Reference to the Stock model
+        ref: 'Stock', 
         required: true
     },
     quantity: {
         type: Number,
         required: true,
-        min: [1, 'Quantity must be at least 1'] // Can't own 0 or negative shares
+        min: [1, 'Quantity must be at least 1'] 
     },
     averageBuyPrice: {
         type: Number,
         required: true
     }
 }, { 
-    _id: false // This prevents Mongoose from creating an _id for each sub-document
+    _id: false 
 });
 
 
-// --- MAIN USER SCHEMA ---
 const userSchema = new mongoose.Schema({
-  // --- Existing Authentication and Verification Fields ---
   email: {
     type: String,
     required: [true, 'Please provide your email'],
@@ -37,7 +34,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minlength: 8,
-    select: false, // Hide password from default query results
+    select: false, 
   },
   isVerified: {
     type: Boolean,
@@ -48,44 +45,38 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpire: Date,
 
-  // --- NEW Fields for Trading Simulation ---
   balance: {
       type: Number,
-      default: 100000 // Start users with $100,000 in virtual currency
+      default: 100000 
   },
-  portfolio: [portfolioStockSchema], // Embed the portfolio schema here
+  portfolio: [portfolioStockSchema], 
 
 }, {
-  timestamps: true, // Automatically adds createdAt and updatedAt
+  timestamps: true, 
 });
 
-// --- Existing Mongoose Middleware and Methods ---
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Method to compare candidate password with the hashed password
 userSchema.methods.comparePassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-// Method to generate a 6-digit OTP
 userSchema.methods.generateOTP = function() {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.otp = otp;
-  this.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  this.otpExpiry = Date.now() + 10 * 60 * 1000; 
   return otp;
 };
 
-// Method to generate a password reset token
 userSchema.methods.generatePasswordResetToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.resetPasswordToken = crypto.createHash('sha265').update(resetToken).digest('hex');
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; 
   return resetToken;
 };
 

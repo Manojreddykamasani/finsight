@@ -6,16 +6,13 @@ const agentLogSchema = new mongoose.Schema({
         ref: 'Agent',
         required: true
     },
-    // --- NEW FIELD ---
-    // This links the log to the specific news event that triggered it.
-    // It is not required, so daily market reviews (without news) are still valid logs.
+
     newsEvent: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'NewsEvent',
-        index: true, // Add index for faster lookups
+        index: true, 
         default: null
     },
-    // --- END NEW FIELD ---
     insight: {
         type: String,
         required: [true, "Log entry must contain insights."]
@@ -25,16 +22,15 @@ const agentLogSchema = new mongoose.Schema({
         required: [true, "Log must specify actions taken."]
     },
     marketSentiment: {
-        type: String, // e.g., "Bullish", "Bearish", "Neutral"
+        type: String, 
         required: true,
     },
-    // A snapshot of the agent's net worth at the time of logging
     netWorthSnapshot: {
         type: Number,
         required: true,
     }
 }, {
-    timestamps: true // createdAt will serve as the log date
+    timestamps: true 
 });
 
 const AgentLog = mongoose.model('AgentLog', agentLogSchema);

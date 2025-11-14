@@ -17,7 +17,7 @@ async def process_single_agent(
     agent: dict, 
     market_context: str, 
     event_string: str, 
-    event_id: str | None = None  # --- ADD THIS PARAMETER ---
+    event_id: str | None = None  
 ):
     """Processes a single agent's decision cycle based on a market event."""
     try:
@@ -69,14 +69,13 @@ Based on your persona, your current holdings, your cash balance, and the provide
             logger.error(f"Failed to get a decision for agent {agent_id}")
             return
 
-        # --- MODIFIED LOG PAYLOAD ---
         log_payload = {
             "agentId": agent_id,
             "insight": decision.get('reasoning', 'No reasoning provided.'),
             "actionsTaken": f"Decision: {decision.get('decision')}, Symbol: {decision.get('symbol')}, Quantity: {decision.get('quantity')}",
             "marketSentiment": decision.get('emotion', 'Neutral'),
             "netWorthSnapshot": net_worth,
-            "newsEvent": event_id # --- ADD THE EVENT ID HERE ---
+            "newsEvent": event_id 
         }
         await node_api_service.agent_action("log", log_payload)
 
@@ -101,13 +100,13 @@ Based on your persona, your current holdings, your cash balance, and the provide
         logger.error(f"Error processing agent {agent.get('name', 'Unknown')}: {e}", exc_info=True)
 
 
-async def trigger_all_agents_with_news(news_string: str, event_id: str): # --- ADD event_id ---
+async def trigger_all_agents_with_news(news_string: str, event_id: str): 
     """
     Triggers all agents to react to a specific news event.
     """
     logger.info(f"--- Triggering all agents for news event_id: {event_id} ---")
     event_string = f"A news event has just occurred: \"{news_string}\""
-    await _trigger_all_agents(event_string, event_id) # --- PASS event_id ---
+    await _trigger_all_agents(event_string, event_id) 
     
 async def trigger_daily_market_review():
     """
@@ -115,10 +114,10 @@ async def trigger_daily_market_review():
     """
     logger.info("--- Triggering daily market review for all agents ---")
     event_string = "The market is open for trading. Review your portfolio and the current market prices to make a decision."
-    await _trigger_all_agents(event_string, event_id=None) # --- PASS None for event_id ---
+    await _trigger_all_agents(event_string, event_id=None) 
 
 
-async def _trigger_all_agents(event_string: str, event_id: str | None = None): # --- ADD event_id ---
+async def _trigger_all_agents(event_string: str, event_id: str | None = None): 
     """
     Generic internal function to fetch market data and trigger agents
     based on a given event string.
@@ -138,7 +137,6 @@ async def _trigger_all_agents(event_string: str, event_id: str | None = None): #
         logger.warning("No agents found to trigger.")
         return
 
-    # --- MODIFIED TASK CREATION ---
     tasks = [process_single_agent(agent, market_context, event_string, event_id) for agent in agents]
     await asyncio.gather(*tasks)
     

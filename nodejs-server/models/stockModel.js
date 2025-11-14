@@ -10,9 +10,9 @@ const stockSchema = new mongoose.Schema({
   marketCap: { type: Number },
   peRatio: { type: Number },
   dividendYield: { type: Number },
-  volatility: { type: Number, default: 0.02 }, // Represents the stock's sensitivity to demand changes
+  volatility: { type: Number, default: 0.02 }, 
   volume: { type: Number, default: 0 },
-  avgVolume: { type: Number, default: 0 }, // Used to gauge typical trading activity
+  avgVolume: { type: Number, default: 0 }, 
   history: [
     {
       price: Number,

@@ -9,17 +9,13 @@ async def create_agent(agent_data: AgentCreate):
     """
     Creates a new agent, now including the selected model.
     """
-    # --- MODIFIED LINE ---
-    # Pass all three arguments to the service
     result = await node_api_service.create_agent(
         agent_data.name, 
         agent_data.persona, 
         agent_data.model
     )
-    # --- END MODIFIED LINE ---
     
     if result.get("status") != "success":
-        # Get more specific error message from the service
         error_detail = result.get("message", "Failed to create agent in Node.js backend.")
         raise HTTPException(status_code=400, detail=error_detail)
     return result

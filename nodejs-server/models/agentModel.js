@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// We can reuse the same sub-document schema from the user model for consistency
 const portfolioStockSchema = new mongoose.Schema({
     stock: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,17 +30,15 @@ const agentSchema = new mongoose.Schema({
         required: [true, 'Agent must have a persona (e.g., Aggressive, Value Investor)'],
         trim: true,
     },
-    // --- NEW FIELD ---
     model: {
         type: String,
         required: [true, 'Agent must have a model (e.g., gemini-pro)'],
-        default: 'gemini-2.5-pro', // Set a sensible default
+        default: 'gemini-2.5-pro', 
         trim: true,
     },
-    // --- END NEW FIELD ---
     balance: {
         type: Number,
-        default: 100000 // Agents also start with $100,000
+        default: 100000 
     },
     portfolio: [portfolioStockSchema],
 }, {

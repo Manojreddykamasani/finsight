@@ -24,7 +24,7 @@ const loanSchema = new mongoose.Schema({
         default: 'ACTIVE'
     }
 }, {
-    timestamps: true // createdAt will be the start date of the loan
+    timestamps: true 
 });
 
 const Loan = mongoose.model('Loan', loanSchema);

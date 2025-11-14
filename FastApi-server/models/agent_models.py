@@ -3,7 +3,7 @@ from typing import Literal
 
 class AgentCreate(BaseModel):
     name: str
-    persona: str # e.g., "Aggressive Growth Investor", "Cautious Value Investor"
+    persona: str 
     model: str = "gemini-pro"
 
 class NewsTrigger(BaseModel):

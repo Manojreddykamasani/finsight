@@ -25,7 +25,7 @@ const transactionSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    price: { // The price per share at the time of the transaction
+    price: { 
         type: Number,
         required: true
     },

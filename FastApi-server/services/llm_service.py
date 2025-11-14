@@ -6,15 +6,11 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# 1. Configure Google Gemini API
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
-# 2. Configure Local Ollama API Client
-# We create a separate client for local requests.
-OLLAMA_API_URL = "http://host.docker.internal:11434/api/generate"
-ollama_client = httpx.AsyncClient(timeout=60.0) # Longer timeout for local models
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+ollama_client = httpx.AsyncClient(timeout=60.0) 
 
-# 3. Define the common JSON schema
 JSON_RESPONSE_SCHEMA = """
 {
     "emotion": "A single word describing your current sentiment (e.g., Cautious, Optimistic, Anxious, Greedy)",
@@ -36,36 +32,29 @@ async def generate_agent_decision(prompt: str, model_name: str = "gemini-2.5-pro
     
     text_response = ""
     try:
-        # --- ROUTE 1: Google Gemini API ---
         if model_name.startswith("gemini-"):
             model = genai.GenerativeModel(model_name)
             response = await model.generate_content_async(full_prompt)
             text_response = response.text
 
-        # --- ROUTE 2: Local Ollama API ---
         elif model_name.startswith("ollama/"):
-            # Extract model name after prefix (e.g., "ollama/tinyllama" -> "tinyllama")
             local_model_name = model_name.split('/', 1)[1]
             
             ollama_payload = {
                 "model": local_model_name,
                 "prompt": full_prompt,
-                "format": "json",  # Request JSON output from Ollama
+                "format": "json",  
                 "stream": False
             }
             response = await ollama_client.post(OLLAMA_API_URL, json=ollama_payload)
-            response.raise_for_status() # Check for HTTP errors
+            response.raise_for_status()
             
-            # Ollama (with format:json) returns the JSON string in the 'response' field
             text_response = response.json().get("response", "{}")
 
-        # --- Unknown Model ---
         else:
             logger.error(f"Unknown model provider for: {model_name}")
             return None
 
-        # --- Common Parsing Step ---
-        # Clean the response to extract only the JSON part
         clean_text = text_response.strip().replace("```json", "").replace("```", "").strip()
         logger.info(f"AI raw response from {model_name}: {clean_text}")
         return json.loads(clean_text)

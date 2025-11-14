@@ -6,7 +6,6 @@ const Loan = require('../models/loanModel');
 const AgentLog = require('../models/agentLogModel');
 const { marketPressure } = require('../simulation/marketState');
 
-// --- NEW: Agent Management (for Admin Panel) ---
 
 exports.createAgent = async (req, res) => {
     try {
@@ -29,7 +28,6 @@ exports.createAgent = async (req, res) => {
 
 exports.getAllAgents = async (req, res) => {
     try {
-        // Return model as well, so Python service can see it
         const agents = await Agent.find({}, '_id name persona model');
         res.status(200).json({ status: "success", data: agents });
     } catch (err) {
@@ -38,7 +36,6 @@ exports.getAllAgents = async (req, res) => {
 };
 
 
-// --- Existing Agent Portfolio and Trading ---
 
 exports.buyStock = async (req, res) => {
     const { agentId, symbol, quantity } = req.body;
@@ -60,7 +57,6 @@ exports.buyStock = async (req, res) => {
 
         const existingStockIndex = agent.portfolio.findIndex(s => s.stock.equals(stock._id));
         
-        // --- BUG FIX: Was `existingStock-index` ---
         if (existingStockIndex > -1) {
             const es = agent.portfolio[existingStockIndex]; 
             const totalQty = es.quantity + Number(quantity);
@@ -171,7 +167,7 @@ exports.createDailyLog = async (req, res) => {
             actionsTaken, 
             marketSentiment, 
             netWorthSnapshot,
-            newsEvent: newsEvent || null // Save the newsEvent ID (or null if it's a daily review)
+            newsEvent: newsEvent || null 
         });
         res.status(201).json({ status: "success", data: log });
     } catch (err) {
@@ -179,7 +175,6 @@ exports.createDailyLog = async (req, res) => {
     }
 };
 
-// --- Helper routes to get agent data ---
 exports.getAgentDetails = async (req, res) => {
     try {
         const agent = await Agent.findById(req.params.id).populate('portfolio.stock', 'symbol name price');

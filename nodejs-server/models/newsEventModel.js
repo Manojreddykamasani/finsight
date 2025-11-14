@@ -12,10 +12,9 @@ const newsEventSchema = new mongoose.Schema({
         trim: true
     },
 }, {
-    timestamps: true // Adds createdAt and updatedAt
+    timestamps: true 
 });
 
-// Index createdAt for fast sorting
 newsEventSchema.index({ createdAt: -1 });
 
 const NewsEvent = mongoose.model('NewsEvent', newsEventSchema);

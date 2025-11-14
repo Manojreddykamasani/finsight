@@ -1,29 +1,32 @@
-# Stage 1: builder (Debian-based to avoid npm/alpine issues)
+# --- Stage 1: Build Dependencies ---
+# Use a robust base for dependency installation
 FROM node:20-bullseye AS builder
 WORKDIR /app
 
+# Copy package files and install production dependencies
 COPY package.json package-lock.json ./
-RUN npm ci
+# Using 'npm ci' for clean and reliable installs
+RUN npm ci --production
 
-COPY . .
-ARG NEXT_PUBLIC_BASE_URL
-ARG NEXT_PUBLIC_FAST_URL
-ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
-ENV NEXT_PUBLIC_FAST_URL=${NEXT_PUBLIC_FAST_URL}
-
-RUN npm run build
-
-# Stage 2: runner (smaller)
+# --- Stage 2: Final Runtime Image ---
+# Use the lighter Alpine image for the final runtime
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm install
+# Copy the production node_modules from the builder stage
+COPY --from=builder /app/node_modules ./node_modules
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/package.json ./package.json
+# Copy application source code (assume all source files are needed)
+COPY . .
 
-EXPOSE 3000
-CMD ["npm", "start"]
+# Environment variables (required for runtime secrets like MONGO_URL)
+# These will be passed using the -e flag or docker-compose at runtime
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Expose the port (matches your code: 5000)
+EXPOSE 5000
+
+# Command to start the server
+CMD ["node", "index.js"] 
+# NOTE: Ensure your main entry file is named 'index.js' or adjust the CMD accordingly.

@@ -117,7 +117,7 @@ exports.forgotPassword = async (req, res, next) => {
     const resetToken = user.generatePasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetURL = `https://finsight-jade.vercel.app/reset-password/${resetToken}`;
 
     const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}\nIf you did not forget your password, please ignore this email.`;
 

@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from services.agent_orchestrator import trigger_all_agents_with_news, trigger_daily_market_review
-from services.node_api_service import node_api_service # Import our service
+from services.node_api_service import node_api_service 
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -18,7 +18,6 @@ async def trigger_news_event(trigger: NewsTrigger, background_tasks: BackgroundT
     This now creates the event in the DB first.
     """
     try:
-        # 1. Create the NewsEvent in Node.js DB and get the ID
         new_event = await node_api_service.create_news_event(
             headline=trigger.news_headline,
             content=trigger.news_content
@@ -31,11 +30,10 @@ async def trigger_news_event(trigger: NewsTrigger, background_tasks: BackgroundT
         event_id = new_event['_id']
         logger.info(f"News event created with ID: {event_id}. Triggering agents...")
 
-        # 2. Add the agent trigger to background tasks with the new event_id
         background_tasks.add_task(
             trigger_all_agents_with_news, 
-            news_string=trigger.news_headline, # Pass headline for the prompt
-            event_id=event_id                  # Pass ID for logging
+            news_string=trigger.news_headline, 
+            event_id=event_id                 
         )
         
         return {"message": "News event trigger accepted. Agents are processing in the background."}
