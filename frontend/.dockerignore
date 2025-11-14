@@ -1,0 +1,5 @@
+# Exclude node_modules from the build context
+node_modules
+
+# Exclude the local build cache
+.next

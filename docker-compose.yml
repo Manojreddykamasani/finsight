@@ -1,52 +1,58 @@
-version: '3.8'
-
-# This file orchestrates your three custom applications
 services:
-
-  # 1. Frontend (Next.js)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+      args:
+        - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+        - NEXT_PUBLIC_FAST_URL=${NEXT_PUBLIC_FAST_URL}
     env_file:
       - ./frontend/.env
-    # Depends on both backends being started
+    ports:
+      - "3000:3000"
     depends_on:
       - nodejs-server
       - fastapi-server
     container_name: finsight-frontend
+    networks:
+      - finsight-net
 
-  # 2. NodeJS Server (Backend)
   nodejs-server:
     build:
       context: ./nodejs-server
       dockerfile: Dockerfile
-    ports:
-      # Exposing port 5000 to the host machine
-      - "5000:5000"
     env_file:
       - ./nodejs-server/.env
-    # This service name 'nodejs-server' is its hostname inside the network
+    ports:
+      - "5000:5000"
     container_name: finsight-nodejs-server
-    # We removed 'depends_on: - mongo' since it's now external
+    networks:
+      - finsight-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
-  # 3. FastAPI Server (Orchestrator)
   fastapi-server:
     build:
       context: ./fastapi-server
       dockerfile: Dockerfile
-    ports:
-      # Exposing port 8000 to the host machine
-      - "8000:8000"
     env_file:
       - ./fastapi-server/.env
-    # This service only depends on the Node server now
+    ports:
+      - "8000:8000"
     depends_on:
       - nodejs-server
     container_name: finsight-fastapi-server
-    # We removed 'depends_on: - ollama'
+    networks:
+      - finsight-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
-# No volumes are needed since Mongo/Ollama are external
-volumes: {}
+networks:
+  finsight-net:
+    driver: bridge

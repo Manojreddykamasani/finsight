@@ -1,12 +1,17 @@
-// app/verify-otp/page.jsx
 'use client';
+export const dynamic = 'force-dynamic';
+
+// We need to import Suspense
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import AuthCard from '@/components/AuthCard';
 import Input from '@/components/Input';
 import { useAuth } from '@/context/AuthContext';
 
-export default function VerifyOtpPage() {
+// --- Step 1: Move all your logic into a new component ---
+// This component uses the hooks, so it's the one that needs Suspense
+function VerifyOtpComponent() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') || '';
@@ -36,14 +41,27 @@ export default function VerifyOtpPage() {
   }
 
   return (
+    <AuthCard title="Verify your email" subtitle={`We sent an OTP to ${email || 'your email'}`}>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <Input label="One-Time Password (OTP)" name="otp" placeholder="Enter 6-digit code" required />
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <button className="btn-primary w-full" disabled={loading}>{loading ? 'Verifying…' : 'Verify & Continue'}</button>
+      </form>
+    </AuthCard>
+  );
+}
+
+// --- Step 2: Export a page that wraps your component in <Suspense> ---
+// This is now the default export for the page
+export default function VerifyOtpPage() {
+  return (
     <div className="mx-auto max-w-7xl px-4 py-14">
-      <AuthCard title="Verify your email" subtitle={`We sent an OTP to ${email || 'your email'}`}>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <Input label="One-Time Password (OTP)" name="otp" placeholder="Enter 6-digit code" required />
-          {err && <p className="text-sm text-red-600">{err}</p>}
-          <button className="btn-primary w-full" disabled={loading}>{loading ? 'Verifying…' : 'Verify & Continue'}</button>
-        </form>
-      </AuthCard>
+      {/* Suspense will show a fallback UI while VerifyOtpComponent (which uses useSearchParams)
+        is loading on the client.
+      */}
+      <Suspense fallback={<p>Loading verification form...</p>}>
+        <VerifyOtpComponent />
+      </Suspense>
     </div>
   );
 }

@@ -3,7 +3,7 @@ const Stock = require("../models/stockModel.js");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URL;
+const MONGO_URI ="mongodb+srv://manojreddy08113_db_user:manoj08113@cluster0.jrnlvwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const seedStocks = async () => {
   try {

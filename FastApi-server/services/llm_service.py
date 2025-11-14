@@ -11,7 +11,7 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 
 # 2. Configure Local Ollama API Client
 # We create a separate client for local requests.
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
+OLLAMA_API_URL = "http://host.docker.internal:11434/api/generate"
 ollama_client = httpx.AsyncClient(timeout=60.0) # Longer timeout for local models
 
 # 3. Define the common JSON schema

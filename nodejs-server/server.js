@@ -25,6 +25,9 @@ app.use(express.json());
 app.use(cors());
 
 // --- API Routes ---
+app.get("/", (req, res) => {
+  res.send("Finsight Node.js Server is running.");
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", stockRoutes);
 app.use("/api/portfolio", portfolioRoutes);
@@ -49,7 +52,7 @@ mongoose
     console.log("MongoDB connected successfully.");
     
     // Start the HTTP server only after the database connection is established
-    server.listen(PORT, () => {
+    server.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   })

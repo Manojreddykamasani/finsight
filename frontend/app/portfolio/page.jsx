@@ -16,19 +16,19 @@ export default function PortfolioPage() {
     useEffect(() => {
         const fetchPortfolio = async () => {
             if (!token) {
-              setIsLoading(false);
-              return;
+                setIsLoading(false);
+                return;
             };
 
             try {
                 const response = await fetch(`${API_BASE_URL}/portfolio`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                  },
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
 
                 if (!response.ok) {
-                  throw new Error('Failed to fetch portfolio');
+                    throw new Error('Failed to fetch portfolio');
                 }
 
                 const data = await response.json();
@@ -36,8 +36,14 @@ export default function PortfolioPage() {
                 setPortfolio(portfolioData);
 
                 if (socket && portfolioData.length > 0) {
-                    const symbols = portfolioData.map(p => p.stock.symbol);
-                    socket.emit('subscribeStocks', symbols);
+                    // FIX: Safely extract symbols using optional chaining and filter out nulls/undefineds
+                    const symbols = portfolioData
+                        .map(p => p.stock?.symbol)
+                        .filter(symbol => symbol); 
+                    
+                    if (symbols.length > 0) {
+                        socket.emit('subscribeStocks', symbols);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch portfolio', error);
@@ -61,8 +67,8 @@ export default function PortfolioPage() {
         };
     }, [token, socket]);
 
-    // ... The rest of the JSX for this component remains exactly the same as before ...
-    // ... It correctly displays the loading state, prompts for login, and renders the portfolio table ...
+    // --- JSX Rendering Logic ---
+    
     if (isLoading) {
         return <p className="p-6 text-center">Loading your portfolio...</p>;
     }
@@ -76,7 +82,11 @@ export default function PortfolioPage() {
     }
     
     const totalPortfolioValue = portfolio.reduce((acc, holding) => {
-        const currentPrice = livePrices[holding.stock.symbol] || holding.stock.price;
+        // Safe access here too, though the previous error was in the useEffect hook
+        const symbol = holding.stock?.symbol;
+        if (!symbol) return acc;
+        
+        const currentPrice = livePrices[symbol] || holding.stock.price;
         return acc + (currentPrice * holding.quantity);
     }, 0);
     
@@ -114,28 +124,31 @@ export default function PortfolioPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {portfolio.length > 0 ? portfolio.map(holding => {
+                             // Defensive check before rendering
+                             if (!holding.stock || !holding.stock.symbol) return null;
+                             
                              const currentPrice = livePrices[holding.stock.symbol] || holding.stock.price;
                              const marketValue = currentPrice * holding.quantity;
                              const priceChange = currentPrice - holding.averageBuyPrice;
-                            return (
-                                <tr key={holding.stock.symbol}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <Link href={`/stock/${holding.stock.symbol}`} className="hover:underline">
-                                            <div className="font-bold">{holding.stock.symbol}</div>
-                                            <div className="text-sm text-gray-500">{holding.stock.name}</div>
-                                        </Link>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">{holding.quantity}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">${holding.averageBuyPrice.toFixed(2)}</td>
-                                    <td className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>${currentPrice.toFixed(2)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right font-bold">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                            )
-                        }) : (
-                            <tr>
-                                <td colSpan="5" className="text-center py-10 text-gray-500">You have no holdings. Start trading!</td>
-                            </tr>
-                        )}
+                             return (
+                                 <tr key={holding.stock.symbol}>
+                                     <td className="px-6 py-4 whitespace-nowrap">
+                                         <Link href={`/stock/${holding.stock.symbol}`} className="hover:underline">
+                                             <div className="font-bold">{holding.stock.symbol}</div>
+                                             <div className="text-sm text-gray-500">{holding.stock.name}</div>
+                                         </Link>
+                                     </td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-right">{holding.quantity}</td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-right">${holding.averageBuyPrice.toFixed(2)}</td>
+                                     <td className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>${currentPrice.toFixed(2)}</td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-right font-bold">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                 </tr>
+                             )
+                         }) : (
+                             <tr>
+                                 <td colSpan="5" className="text-center py-10 text-gray-500">You have no holdings. Start trading!</td>
+                             </tr>
+                         )}
                     </tbody>
                 </table>
             </div>

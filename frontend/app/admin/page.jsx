@@ -197,7 +197,6 @@ export default function AgentManagementPage() {
                                             <optgroup label="Local Models (Ollama)">
                                                 <option value="ollama/phi3:mini">Local: Phi-3 Mini</option>
                                                 <option value="ollama/tinyllama">Local: TinyLlama</option>
-                                                <option value="ollama/llama3:8b">Local: Llama 3 (8B)</option>
                                             </optgroup>
                                         </select>
                                     </div>
