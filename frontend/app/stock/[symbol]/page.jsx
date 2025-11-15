@@ -9,102 +9,128 @@ import TradePanel from "@/components/TradePanel";
 const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export default function StockDetailPage() {
-  const { symbol } = useParams();
+  // useParams() can return { symbol: null } initially
+  const { symbol } = useParams(); 
   const socket = useSocket();
-  const { token, balance } = useAuth(); // We listen to balance changes to trigger refetch
+  const { token, balance } = useAuth();
 
   const [stock, setStock] = useState(null);
   const [marketHistory, setMarketHistory] = useState([]);
   const [userHolding, setUserHolding] = useState(null);
   const [userTransactions, setUserTransactions] = useState([]);
-  
-  // Use useCallback to memoize this function so it can be used in useEffect dependencies
+
+  // Use useCallback to memoize this function
   const fetchUserData = useCallback(async () => {
-    if (!token || !symbol) {
-        setUserHolding(null);
-        setUserTransactions([]);
-        return;
+    // 🚨 FIX 1: Ensure symbol is available before making API calls
+    if (!token || !symbol) { 
+      setUserHolding(null);
+      setUserTransactions([]);
+      return;
     };
+    
+    // Convert symbol to uppercase once for consistent comparison and API calls
+    const stockSymbol = symbol.toUpperCase();
+
     try {
-        // --- Fetch Portfolio ---
-        const portfolioRes = await fetch(`${API_BASE_URL}/portfolio`, { headers: { 'Authorization': `Bearer ${token}` } });
-        // Check if the response is OK (status 200-299) before trying to parse JSON
-        if (!portfolioRes.ok) {
-            const errorText = await portfolioRes.text(); // Get the raw response text (the HTML error page)
-            console.error("Error fetching portfolio data. Server response:", errorText);
-            throw new Error(`Failed to fetch portfolio. Server responded with status: ${portfolioRes.status}`);
-        }
-        const portfolioData = await portfolioRes.json();
-        if (portfolioData.status === 'success') {
-            const holding = portfolioData.data.portfolio.find(h => h.stock.symbol.toUpperCase() === symbol.toUpperCase());
-            setUserHolding(holding || null);
-        }
+      // --- Fetch Portfolio ---
+      const portfolioRes = await fetch(`${API_BASE_URL}/portfolio`, { headers: { 'Authorization': `Bearer ${token}` } });
+      
+      if (!portfolioRes.ok) {
+        const errorText = await portfolioRes.text();
+        console.error("Error fetching portfolio data. Server response:", errorText);
+        throw new Error(`Failed to fetch portfolio. Server responded with status: ${portfolioRes.status}`);
+      }
+      
+      const portfolioData = await portfolioRes.json();
+      if (portfolioData.status === 'success') {
+        // Use stockSymbol here
+        const holding = portfolioData.data.portfolio.find(h => h.stock.symbol.toUpperCase() === stockSymbol);
+        setUserHolding(holding || null);
+      }
 
-        // --- Fetch Transactions ---
-        const transRes = await fetch(`${API_BASE_URL}/portfolio/transactions/${symbol}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        // Check if the response is OK before trying to parse JSON
-        if (!transRes.ok) {
-            const errorText = await transRes.text();
-            console.error("Error fetching transaction data. Server response:", errorText);
-            throw new Error(`Failed to fetch transactions. Server responded with status: ${transRes.status}`);
-        }
-        const transData = await transRes.json();
+      // --- Fetch Transactions ---
+      // Use stockSymbol here
+      const transRes = await fetch(`${API_BASE_URL}/portfolio/transactions/${stockSymbol}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      
+      if (!transRes.ok) {
+        const errorText = await transRes.text();
+        console.error("Error fetching transaction data. Server response:", errorText);
+        throw new Error(`Failed to fetch transactions. Server responded with status: ${transRes.status}`);
+      }
+      
+      const transData = await transRes.json();
+      
+      console.log(`[Debug] Transaction API Response for ${stockSymbol}:`, transData);
+
+      if (transData.status === 'success') {
+        setUserTransactions(transData.data);
         
-        // --- DEBUG LOGGING ADDED ---
-        console.log(`[Debug] Transaction API Response for ${symbol}:`, transData);
-
-        if (transData.status === 'success') {
-            setUserTransactions(transData.data);
-            
-            if (transData.data.length === 0) {
-                console.log("[Debug] The API successfully returned 0 transactions for this user and stock.");
-            }
+        if (transData.data.length === 0) {
+          console.log("[Debug] The API successfully returned 0 transactions for this user and stock.");
         }
+      }
     } catch (error) {
-        // This catch block will now receive a more useful error message.
-        console.error("An error occurred in fetchUserData:", error.message);
+      // This catch block will now receive a more useful error message.
+      // This is where your original error was being thrown if symbol was null
+      console.error("An error occurred in fetchUserData:", error.message);
     }
-  }, [token, symbol]);
+  }, [token, symbol]); // symbol is now correctly included
 
-  // This effect runs once to set up sockets and initially fetch data
+  // This effect sets up sockets and initially fetches data
   useEffect(() => {
-    if (!socket || !symbol) return;
+    // 🚨 FIX 2: Prevent running when symbol is null/undefined
+    if (!socket || !symbol) return; 
 
-    socket.emit("subscribeStocks", [symbol.toUpperCase()]);
+    const stockSymbol = symbol.toUpperCase();
+
+    // Socket Setup
+    socket.emit("subscribeStocks", [stockSymbol]);
+    
     socket.on("stockInit", (data) => {
-      if (data.symbol.toUpperCase() !== symbol.toUpperCase()) return;
+      if (data.symbol.toUpperCase() !== stockSymbol) return;
       setStock(data);
       setMarketHistory(data.history || []);
     });
+    
     socket.on("stockUpdate", (data) => {
-      if (data.symbol.toUpperCase() !== symbol.toUpperCase()) return;
+      if (data.symbol.toUpperCase() !== stockSymbol) return;
       setStock((prev) => ({ ...prev, price: data.price }));
       if (data.point) {
         setMarketHistory((prev) => [...prev, { price: data.point.price, timestamp: data.point.timestamp }]);
       }
     });
     
+    // Initial data fetch
     fetchUserData();
 
     return () => {
-      socket.emit("unsubscribeStocks", [symbol.toUpperCase()]);
-      socket.off("stockInit");
-      socket.off("stockUpdate");
+      // Only unsubscribe if symbol is available for cleanup
+      if (symbol) {
+        socket.emit("unsubscribeStocks", [stockSymbol]);
+        socket.off("stockInit");
+        socket.off("stockUpdate");
+      }
     };
   }, [socket, symbol, fetchUserData]);
 
-  // This effect listens for changes in balance (which happens after a trade) and refetches user data
+  // This effect listens for changes in balance (after a trade) and refetches user data
   useEffect(() => {
+    // 🚨 FIX 3: Prevent running when symbol is null/undefined
+    if (!symbol) return; 
+    
     fetchUserData();
-  }, [balance, fetchUserData]);
+  }, [balance, fetchUserData, symbol]); // Added symbol dependency for completeness
 
-  if (!stock) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading {symbol.toUpperCase()}...</div>;
+  // If symbol is null or stock data hasn't loaded, show loading state
+  if (!symbol || !stock) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading {symbol ? symbol.toUpperCase() : 'Stock'} details...</div>;
 
+  // --- Rendering Calculations ---
   const marketValue = userHolding ? userHolding.quantity * stock.price : 0;
   const totalCost = userHolding ? userHolding.quantity * userHolding.averageBuyPrice : 0;
   const totalProfitLoss = marketValue - totalCost;
   const totalProfitLossPercent = totalCost > 0 ? (totalProfitLoss / totalCost) * 100 : 0;
 
+  // --- JSX Structure ---
   return (
     <main className="p-4 md:p-6 space-y-6">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
